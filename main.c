@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "server.h"
 #include <stdio.h>
 
 int main(int argc, char** argv) {
@@ -7,8 +8,7 @@ int main(int argc, char** argv) {
         print_usage();
         return 1;
     } else {
-        printf("port: %d\n", arguments->port);
-        printf("path to root directory: %s\n", arguments->path);
+        start_server(arguments);
         return 0;
     }
 }

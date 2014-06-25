@@ -1,5 +1,6 @@
 all:
-	gcc -Wextra -Wall -Wfloat-equal main.c parser.c -o webserver
+	mkdir -p bin
+	gcc -Wextra -Wall -Wfloat-equal main.c parser.c server.c -o ./bin/webserver
 
 run:
-	./webserver 80 rootDir
+	./bin/webserver 2014 rootDir
