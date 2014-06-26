@@ -79,6 +79,7 @@ void handle_client(int fd) {
     if (err == -1) {
         perror("send() failed");
     }
+    free(html_header);
 
     err = shutdown(fd, SHUT_RDWR);
     if (err == -1) {
