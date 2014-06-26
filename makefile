@@ -3,4 +3,4 @@ all:
 	gcc -Wextra -Wall -Wfloat-equal main.c parser.c server.c -o ./bin/webserver
 
 run:
-	./bin/webserver 2014 rootDir
+	./bin/webserver 2014 root

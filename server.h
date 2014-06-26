@@ -5,4 +5,8 @@
 
 void start_server(StartupArguments* arguments);
 
+void handle_client(int fd);
+
+char* read_header(int fd);
+
 #endif /* SERVER_H */

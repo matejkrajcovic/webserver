@@ -41,3 +41,27 @@ int only_numeric(char* str) {
     }
     return 1;
 }
+
+char* parse_get_header(char* header) {
+    char* position = strstr(header, "GET"); // searches for substring
+    char* path;
+    char* path_start_position = NULL;
+    int path_len;
+
+    if (position == NULL) { // not found
+        return NULL;
+    } else {
+        while ((*position != '\0') && (*position != '/')) {
+            position++; // skips to start of path
+        }
+        path_start_position = position;
+        path_len = 0;
+        while ((position[path_len] != '\0') && (position[path_len] != ' ')) {
+            path_len++; // counts length of path
+        }
+        path = malloc(sizeof(char) * (path_len + 1));
+        strncpy(path, path_start_position, path_len);
+        path[path_len+1] = '\0';
+        return path;
+    }
+}

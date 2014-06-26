@@ -12,4 +12,6 @@ void print_usage(void);
 
 int only_numeric(char* str);
 
+char* parse_get_header(char* header);
+
 #endif /* PARSER_H */
