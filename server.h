@@ -11,4 +11,6 @@ char* read_header(int fd);
 
 void send_file(int fd, char* file_name);
 
+void interrupt_signal_handler(int a);
+
 #endif /* SERVER_H */

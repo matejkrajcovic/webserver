@@ -11,15 +11,20 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #define BACK_LOG 10 // number of waiting clients
 #define MAX_HEADER_SIZE 2048 // maximum size of html header client sends
 
+int fd;
+
 void start_server(StartupArguments* arguments) {
     int err = 0;
-    int fd, newfd;
+    int newfd;
     struct sockaddr_in me, peer;
     socklen_t peerlen;
+
+    signal(SIGINT, interrupt_signal_handler);
 
     fd = socket(PF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
@@ -161,4 +166,13 @@ void send_file(int fd, char* file_name) {
         perror("send() failed");
         return;
     }
+}
+
+void interrupt_signal_handler(int a) {
+    printf("\nShuting down...");
+    int err = shutdown(fd, SHUT_RDWR);
+    if (err == -1) {
+        perror("shutdown() failed");
+    }
+    exit(0);
 }
