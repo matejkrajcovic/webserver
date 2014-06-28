@@ -98,6 +98,10 @@ void handle_client(int fd) {
     char* html_header = read_header(fd);
     char* get_header = parse_get_header(html_header);
 
+    if (html_header == NULL) {
+        return;
+    }
+
     char* file_name = get_header + 1;
     if (strstr(file_name, "..") != NULL) {
         err = send(fd, "Do not use '..' in path.\n", 25, 0);
@@ -119,6 +123,10 @@ void handle_client(int fd) {
 
 char* read_header(int fd) {
     char* header = malloc(sizeof(char) * MAX_HEADER_SIZE);
+    if (header == NULL) {
+        perror("malloc() failed");
+        return NULL;
+    }
 
     ssize_t now_read = read(fd, header, MAX_HEADER_SIZE);
     if (now_read == 0) {
@@ -138,35 +146,46 @@ void send_file(int fd, char* file_name) {
 
     err = stat(file_name, &file_stats); // needed to find out file's size
     if (err == -1) {
+        perror("stat() failed");
         if (errno == EACCES) {
             err = send(fd, "File does not exist.", 20, 0);
-            perror("send() failed");
-            return;
+            if (err == -1) {
+                perror("send() failed");
+            }
         } else {
             err = send(fd, "Reading file failed.", 20, 0);
-            perror("stat() failed");
-            return;
+            if (err == -1) {
+                perror("send() failed");
+            }
         }
+        return;
     }
 
     file_size = file_stats.st_size;
     file_content = malloc(sizeof(char) * file_size);
+    if (file_content == NULL) {
+        perror("malloc() failed");
+        return;
+    }
 
     int file_fd = open(file_name, O_RDONLY);
     if (file_fd == -1) {
         perror("open() failed");
+        free(file_content);
         return;
     }
 
     file_content_size = read(file_fd, file_content, file_size);
     if (file_content_size == -1) {
         perror("read() failed");
+        free(file_content);
         return;
     }
 
     err = send(fd, "HTTP/1.0 200 OK\nContent-Type: text/html; charset=UTF-8\n", 56, 0);
     if (err == -1) {
         perror("send() failed");
+        free(file_content);
         return;
     }
 
@@ -175,6 +194,7 @@ void send_file(int fd, char* file_name) {
     err = send(fd, content_length_header, strlen(content_length_header), 0);
     if (err == -1) {
         perror("send() failed");
+        free(file_content);
         return;
     }
 
@@ -182,6 +202,7 @@ void send_file(int fd, char* file_name) {
     err = send(fd, file_content, file_content_size, 0);
     if (err == -1) {
         perror("send() failed");
+        free(file_content);
         return;
     }
 
