@@ -13,4 +13,6 @@ void send_file(int fd, char* file_name);
 
 void interrupt_signal_handler(int a);
 
+void child_signal_handler(int a);
+
 #endif /* SERVER_H */

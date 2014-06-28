@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #define BACK_LOG 10 // number of waiting clients
 #define MAX_HEADER_SIZE 2048 // maximum size of html header client sends
@@ -25,6 +26,7 @@ void start_server(StartupArguments* arguments) {
     socklen_t peerlen;
 
     signal(SIGINT, interrupt_signal_handler);
+    signal(SIGCHLD, child_signal_handler);
 
     fd = socket(PF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
@@ -58,21 +60,37 @@ void start_server(StartupArguments* arguments) {
         }
         printf("Connection accepted.\n");
 
-        handle_client(newfd);
-
-        err = close(newfd);
+        err = fork();
         if (err == -1) {
-            perror("close() failed");
+            perror("fork() failed");
+            exit(1);
+        } else if (err == 0) { // child
+            err = close(fd);
+            if (err == -1) {
+                perror("close() failed");
+            }
+
+            handle_client(newfd);
+
+            err = shutdown(newfd, SHUT_RDWR);
+            if (err == -1) {
+                perror("shutdown() failed");
+            }
+
+            err = close(newfd);
+            if (err == -1) {
+                perror("close() failed");
+            }
+            printf("Connection closed.\n");
+
+            exit(0);
+        } else { // parent
+            err = close(newfd);
+            if (err == -1) {
+                perror("close() failed");
+            }
         }
-
-        printf("Connection closed.\n");
     }
-
-    err = close(fd);
-    if (err == -1) {
-        perror("close() failed");
-    }
-
 }
 
 void handle_client(int fd) {
@@ -113,7 +131,7 @@ char* read_header(int fd) {
 void send_file(int fd, char* file_name) {
     int err = 0;
     struct stat file_stats;
-    int file_size; // off_t
+    int file_size;
     void* file_content;
     ssize_t file_content_size;
     char content_length_header[1024];
@@ -166,13 +184,27 @@ void send_file(int fd, char* file_name) {
         perror("send() failed");
         return;
     }
+
+    free(file_content);
 }
 
 void interrupt_signal_handler(int a) {
     printf("\nShuting down...");
+
     int err = shutdown(fd, SHUT_RDWR);
     if (err == -1) {
         perror("shutdown() failed");
     }
+
+    err = close(fd);
+    if (err == -1) {
+        perror("close() failed");
+    }
+
     exit(0);
+}
+
+void child_signal_handler(int a) {
+    while(waitpid(-1, NULL, WNOHANG) >= 0);
+    signal(SIGCHLD, child_signal_handler);
 }
