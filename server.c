@@ -104,14 +104,15 @@ void handle_client(int fd) {
         return;
     }
 
-    char* file_name = get_header + 1;
-    if (strstr(file_name, "..") != NULL) {
-        err = send(fd, "Do not use '..' in path.\n", 25, 0);
+    if (strstr(get_header, "/../") != NULL) {
+        err = send(fd, "Do not use '/../' in path.\n", 25, 0);
         if (err == -1) {
             perror("send() failed");
         }
         return;
     }
+
+    char* file_name = get_header + 1;
 
     send_file(fd, file_name);
 
