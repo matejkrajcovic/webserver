@@ -16,8 +16,9 @@
 
 #define BACK_LOG 10 // number of waiting clients
 #define MAX_HEADER_SIZE 2048 // maximum size of html header client sends
+#define BUFFER_SIZE 1024 // size of buffer used to read and send file by parts
 
-int fd;
+int fd; // main listening socket, made global to be available to signal listener
 
 void start_server(StartupArguments* arguments) {
     int err = 0;
@@ -140,9 +141,9 @@ char* read_header(int fd) {
 void send_file(int fd, char* file_name) {
     int err = 0;
     struct stat file_stats;
-    int file_size;
-    void* file_content;
-    ssize_t file_content_size;
+    off_t file_size;
+    void* buffer[BUFFER_SIZE];
+    int buffer_length;
     char content_length_header[1024];
 
     err = stat(file_name, &file_stats); // needed to find out file's size
@@ -163,51 +164,47 @@ void send_file(int fd, char* file_name) {
     }
 
     file_size = file_stats.st_size;
-    file_content = malloc(sizeof(char) * file_size);
-    if (file_content == NULL) {
-        perror("malloc() failed");
-        return;
-    }
 
-    int file_fd = open(file_name, O_RDONLY);
-    if (file_fd == -1) {
-        perror("open() failed");
-        free(file_content);
-        return;
-    }
-
-    file_content_size = read(file_fd, file_content, file_size);
-    if (file_content_size == -1) {
-        perror("read() failed");
-        free(file_content);
-        return;
-    }
-
+    /* SENDING HTML HEADER */
     err = send(fd, "HTTP/1.0 200 OK\nContent-Type: text/html; charset=UTF-8\n", 56, 0);
     if (err == -1) {
         perror("send() failed");
-        free(file_content);
         return;
     }
 
     snprintf(content_length_header, sizeof(content_length_header),
-        "Content-Length: %zd\n\n", file_content_size);
+        "Content-Length: %zd\n\n", file_size);
     err = send(fd, content_length_header, strlen(content_length_header), 0);
     if (err == -1) {
         perror("send() failed");
-        free(file_content);
+        return;
+    }
+
+    /* SENDING FILE */
+    int file_fd = open(file_name, O_RDONLY);
+    if (file_fd == -1) {
+        perror("open() failed");
         return;
     }
 
     printf("Sending %s\n", file_name);
-    err = send(fd, file_content, file_content_size, 0);
-    if (err == -1) {
-        perror("send() failed");
-        free(file_content);
-        return;
-    }
+    do {
+        buffer_length = read(file_fd, buffer, BUFFER_SIZE);
+        if (buffer_length == -1) {
+            perror("read() failed");
+            return;
+        }
 
-    free(file_content);
+        int already_sent = 0;
+        while (already_sent != buffer_length) { // sending until everything read is sent
+            int sent_now = send(fd, buffer + already_sent, buffer_length - already_sent, 0);
+            if (sent_now == -1) {
+                perror("send() failed");
+                return;
+            }
+            already_sent += sent_now;
+        }
+    } while (buffer_length > 0); // reading all file (until there is nothing left)
 }
 
 void interrupt_signal_handler(int a) {
