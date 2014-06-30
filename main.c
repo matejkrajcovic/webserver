@@ -10,7 +10,6 @@ int main(int argc, char** argv) {
     StartupArguments* arguments = parse_command_line_arguments(argc, argv);
     if (arguments == NULL) {
         print_usage();
-        free(arguments);
         return 1;
     } else {
         err = chdir(arguments->path); // changing directory to one selected by user
