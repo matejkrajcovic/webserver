@@ -5,23 +5,25 @@
 #include <string.h>
 
 StartupArguments* parse_command_line_arguments(int argc, char** argv) {
-    StartupArguments* arguments = malloc(sizeof(StartupArguments));
-    if (arguments == NULL) {
-        perror("Malloc failed to allocate memory.\n");
-        return NULL;
-    }
+    int port_as_int = atoi(argv[1]);
 
     if (argc != 3) {
         perror("Not enough arguments.\n");
         return NULL;
     }
 
-    arguments->port = atoi(argv[1]);
-    arguments->path = argv[2];
-
-    if (!only_numeric(argv[1]) || (arguments->port < 0) || (arguments->port > 65535)) {
+    if (!only_numeric(argv[1]) || (port_as_int < 0) || (port_as_int > 65535)) {
         return NULL;
     }
+
+    StartupArguments* arguments = malloc(sizeof(StartupArguments));
+    if (arguments == NULL) {
+        perror("Malloc failed to allocate memory.\n");
+        return NULL;
+    }
+
+    arguments->port = atoi(argv[1]);
+    arguments->path = argv[2];
 
     return arguments;
 }
