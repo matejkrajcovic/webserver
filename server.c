@@ -77,6 +77,8 @@ void start_server(StartupArguments* arguments) {
                 perror("shutdown() failed");
             }
 
+            while (read(newfd, NULL, 1024) > 0);
+
             err = close(newfd);
             if (err == -1) {
                 perror("close() failed");
@@ -214,6 +216,8 @@ void interrupt_signal_handler(int a) {
     if (err == -1) {
         perror("shutdown() failed");
     }
+
+    while (read(fd, NULL, 1024) > 0);
 
     err = close(fd);
     if (err == -1) {
