@@ -129,8 +129,11 @@ char* read_header(int fd) {
     }
 
     ssize_t now_read = read(fd, header, MAX_HEADER_SIZE);
-    if (now_read == 0) {
+    if (now_read == -1) {
         header[0] = '\0';
+        perror("read() failed");
+    } else {
+        header[now_read] = '\0';
     }
 
     return header;
