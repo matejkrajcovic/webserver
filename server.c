@@ -114,11 +114,6 @@ void handle_client(int fd) {
     send_file(fd, file_name);
 
     free(html_header);
-
-    err = shutdown(fd, SHUT_RDWR);
-    if (err == -1) {
-        perror("shutdown() failed");
-    }
 }
 
 char* read_header(int fd) {
